@@ -12,6 +12,7 @@
 
 static bool waiting = true;
 static bool addedJsLoadErrorObserver = false;
+static UIView *launchScreen = nil;
 
 @implementation RNSplashScreen
 - (dispatch_queue_t)methodQueue{
@@ -31,11 +32,36 @@ RCT_EXPORT_MODULE(SplashScreen)
     }
 }
 
++ (void)showInApp {
+    NSArray *objects =[[NSBundle mainBundle]loadNibNamed:@"LaunchScreen" owner:nil options:nil];
+    launchScreen = objects[0];
+
+    CGRect rect = [[UIScreen mainScreen] bounds];
+    launchScreen.frame = rect;
+
+    UIViewController *viewController = [[[[UIApplication sharedApplication] delegate] window]rootViewController];
+    [viewController.view addSubview:launchScreen];
+}
+
 + (void)hide {
     dispatch_async(dispatch_get_main_queue(),
                    ^{
-                       waiting = false;
-                   });
+                    if(launchScreen != nil) {
+                        [UIView animateWithDuration:0.5
+                            delay:0.0
+                            options:UIViewAnimationOptionCurveEaseIn
+                            animations:^{
+                                launchScreen.alpha = 0;
+                            }
+                            completion:^(BOOL finished) {
+                                [launchScreen removeFromSuperview];
+                                launchScreen = nil;
+                            }
+                        ];
+                    }
+
+                    waiting = false;
+                });
 }
 
 + (void) jsLoadError:(NSNotification*)notification
@@ -50,6 +76,10 @@ RCT_EXPORT_METHOD(hide) {
 
 RCT_EXPORT_METHOD(show) {
     [RNSplashScreen show];
+}
+
+RCT_EXPORT_METHOD(showInApp) {
+    [RNSplashScreen showInApp];
 }
 
 @end
